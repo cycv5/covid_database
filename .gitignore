@@ -1,0 +1,10 @@
+/.idea
+/.coverage
+/htmlcov
+__pycache__
+/.pytest_cache
+
+test/.pytest_cache
+test/.hypothesis
+
+/test/__pycache__

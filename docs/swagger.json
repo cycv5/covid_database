@@ -1,0 +1,254 @@
+{
+  "openapi" : "3.0.0",
+  "info" : {
+    "description" : "This is a simple API for uploading and querying COVID-19 datasets.",
+    "version" : "1.0.0-oas3",
+    "title" : "Covid-19 Data Web API"
+  },
+  "servers" : [ {
+    "url" : "https://simple-covid.herokuapp.com",
+    "description" : "the public base url , will redirect to this swagger page if 'GET' directly"
+  }, {
+    "url" : "http://127.0.0.1:5000",
+    "description" : "base url for testing on development server"
+  } ],
+  "tags" : [ {
+    "name" : "upload",
+    "description" : "Add new data or update existing data"
+  }, {
+    "name" : "query",
+    "description" : "Query data that has been uploaded"
+  } ],
+  "paths" : {
+    "/time_series/{data_type}" : {
+      "put" : {
+        "tags" : [ "upload" ],
+        "description" : "Upload new time series data\n",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "data_type",
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "death", "confirmed", "active", "recovered" ]
+          },
+          "required" : true,
+          "description" : "the type of data"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Data successfully uploaded",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string",
+                  "example" : "Success"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "CSV file not valid"
+          }
+        }
+      }
+    },
+    "/daily_reports/{date}" : {
+      "put" : {
+        "tags" : [ "upload" ],
+        "description" : "Upload new daily report data\n",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "date",
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "example" : "2021-01-25"
+          },
+          "required" : true,
+          "description" : "the date of this daily report in the form of yyyy-mm-dd"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Data successfully uploaded",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string",
+                  "example" : "Success"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "CSV file not valid"
+          }
+        }
+      }
+    },
+    "/cases" : {
+      "get" : {
+        "tags" : [ "query" ],
+        "summary" : "query covid case data with parameters",
+        "description" : "Query different types of covid cases in multiple locations during a specified time span\n",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "data_type",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "death", "confirmed", "active", "recovered" ]
+            }
+          },
+          "required" : true,
+          "description" : "the type of queried case"
+        }, {
+          "in" : "query",
+          "name" : "locations",
+          "description" : "The locations of the queried cases. Note that we require exact locations, i.e. any field left blank will match a blank field in the database.\nPlease see QueryLocation schema below for details\n",
+          "required" : true,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/QueryLocation"
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "start_time",
+          "description" : "the starting date of this query in the form of yyyy-mm-dd",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "example" : "2021-01-25"
+          }
+        }, {
+          "in" : "query",
+          "name" : "end_time",
+          "description" : "the end date of this query in the form of yyyy-mm-dd (leave blank or omit in url for single day queries)\n",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "example" : "2021-01-25"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "search results matching criteria",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/QueryResultJson"
+                  }
+                }
+              },
+              "text/csv" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/QueryResultCSV"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "bad input parameter"
+          },
+          "404" : {
+            "description" : "No matching data found"
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "QueryLocation" : {
+        "description" : "Specifies one of the locations for query. \nAt least one field need to be specified, leave empty string if you do not have the information.\n We will search the database using the exact 3 fields that you input, i.e. blank fields must also match. For example, if you input {\n  \"country_region\": \"US\",\n  \"state_province\": \"\",\n  \"combined_key\": \"\"\n} as the 3 fields, you will only get a result if ('US', '', '') for the corresponding 3 fields has data in the database.",
+        "type" : "object",
+        "properties" : {
+          "country_region" : {
+            "description" : "Country or region",
+            "type" : "string"
+          },
+          "state_province" : {
+            "type" : "string",
+            "description" : "Province or state"
+          },
+          "combined_key" : {
+            "type" : "string",
+            "description" : "Combined key"
+          }
+        }
+      },
+      "QueryResultJson" : {
+        "type" : "object",
+        "properties" : {
+          "country_region" : {
+            "type" : "string",
+            "example" : "Canada"
+          },
+          "state_province" : {
+            "type" : "string",
+            "example" : "Ontario"
+          },
+          "combined_key" : {
+            "type" : "string",
+            "example" : "Ontario, Canada"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date",
+            "example" : "2020-01-25"
+          },
+          "cases" : {
+            "type" : "integer",
+            "example" : 10
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "death", "confirmed", "active", "recovered" ],
+            "example" : "death"
+          }
+        }
+      },
+      "QueryResultCSV" : {
+        "type" : "string",
+        "description" : "A CSV with the headers\n\nrow_number,country_region,state_province,combined_key,date,cases,type\n",
+        "example" : "index,country_region,state_province,combined_key,date,cases,type \\n\n\n0,Canada,British Columbia,,2020-01-22,0,death \\n\n\n1,Canada,British Columbia,,2020-01-23,2,death"
+      }
+    }
+  }
+}
