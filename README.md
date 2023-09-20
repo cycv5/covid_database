@@ -1,5 +1,6 @@
-# Web API for Covid-19 data
-assignment-2-8-cycv5-qe201020335
+# Web API for Covid-19 data (Closed)
+This is an achived project completed by [Yichen](https://github.com/cycv5) and (Sky)[https://github.com/qe201020335].
+Due to the nature of the project and the ending of the "COVID-era", the server is now shut down.
 
 ## API Documentation
 Our API is deployed on Heroku with base URL `https://simple-covid.herokuapp.com/`. The base url will lead you to the swagger page where you can test the api.
